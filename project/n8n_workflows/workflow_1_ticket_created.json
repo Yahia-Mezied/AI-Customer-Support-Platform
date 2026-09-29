@@ -1,0 +1,110 @@
+{
+  "name": "Workflow 1 - New Ticket Notification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "new-ticket",
+        "options": {}
+      },
+      "id": "node-webhook-ticket-created",
+      "name": "Webhook - New Ticket Created",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "ticket_id",
+              "value": "={{ $json.body.ticket_id }}"
+            },
+            {
+              "name": "customer_name",
+              "value": "={{ $json.body.customer_name }}"
+            },
+            {
+              "name": "customer_email",
+              "value": "={{ $json.body.customer_email }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $json.body.subject }}"
+            },
+            {
+              "name": "category",
+              "value": "={{ $json.body.category }}"
+            },
+            {
+              "name": "priority",
+              "value": "={{ $json.body.priority }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-extract-ticket-info",
+      "name": "Extract Ticket Information",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "@support-team-alerts",
+        "text": "=🔔 New Support Ticket Created: #{{ $json.ticket_id }}\nSubject: {{ $json.subject }}\nCategory: {{ $json.category }}\nPriority: {{ $json.priority }}\nCustomer: {{ $json.customer_name }} ({{ $json.customer_email }})"
+      },
+      "id": "node-notify-support-team",
+      "name": "Notify Support Team (Slack/Telegram)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "support@platform.ai",
+        "toEmail": "={{ $json.customer_email }}",
+        "subject": "=Ticket Received: #{{ $json.ticket_id }} - {{ $json.subject }}",
+        "html": "<h3>Hello {{ $json.customer_name }},</h3><p>We received your support ticket <b>#{{ $json.ticket_id }}</b> regarding '{{ $json.subject }}'.</p><p>Our AI system has classified this issue under <b>{{ $json.category }}</b> with <b>{{ $json.priority }}</b> priority. A support specialist is reviewing it now.</p><br><p>Best regards,<br>AI Support Platform Team</p>"
+      },
+      "id": "node-send-email-customer",
+      "name": "Send Email Notification to Customer",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [680, 400]
+    }
+  ],
+  "connections": {
+    "Webhook - New Ticket Created": {
+      "main": [
+        [
+          {
+            "node": "Extract Ticket Information",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Ticket Information": {
+      "main": [
+        [
+          {
+            "node": "Notify Support Team (Slack/Telegram)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Email Notification to Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {}
+}

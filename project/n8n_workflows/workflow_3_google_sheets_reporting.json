@@ -1,0 +1,80 @@
+{
+  "name": "Workflow 3 - Google Sheets Reporting",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ticket-report",
+        "options": {}
+      },
+      "id": "node-webhook-report",
+      "name": "Webhook - Ticket Resolved / Report",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": "Resolved Tickets",
+        "options": {},
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Ticket ID": "={{ $json.body.ticket_id }}",
+            "Customer": "={{ $json.body.customer_name || 'N/A' }}",
+            "Category": "={{ $json.body.category || 'General' }}",
+            "Priority": "={{ $json.body.priority || 'Medium' }}",
+            "Status": "={{ $json.body.status || 'Resolved' }}",
+            "Assigned Agent": "={{ $json.body.resolved_by || $json.body.assigned_agent || 'Support Team' }}",
+            "Created Date": "={{ $json.body.created_at || new Date().toISOString() }}",
+            "Resolution Date": "={{ $json.body.resolved_at || new Date().toISOString() }}"
+          }
+        }
+      },
+      "id": "node-google-sheets-append",
+      "name": "Append Row in Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"success\",\n  \"message\": \"Ticket data recorded in Google Sheets reporting system.\",\n  \"ticket_id\": {{ $json.body.ticket_id }}\n}",
+        "options": {}
+      },
+      "id": "node-respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [780, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - Ticket Resolved / Report": {
+      "main": [
+        [
+          {
+            "node": "Append Row in Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Row in Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {}
+}

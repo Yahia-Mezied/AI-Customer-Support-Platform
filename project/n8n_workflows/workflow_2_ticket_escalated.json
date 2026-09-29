@@ -1,0 +1,90 @@
+{
+  "name": "Workflow 2 - Ticket Escalation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ticket-escalation",
+        "options": {}
+      },
+      "id": "node-webhook-escalation",
+      "name": "Webhook - Ticket Escalated",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.priority }}",
+              "operation": "equal",
+              "value2": "Critical"
+            }
+          ]
+        }
+      },
+      "id": "node-check-critical",
+      "name": "Check If Priority is Critical",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "alerts@platform.ai",
+        "toEmail": "admin@support.com",
+        "subject": "=🚨 URGENT: Ticket Escalation #{{ $json.body.ticket_id }} - Critical Priority",
+        "html": "<h2>CRITICAL TICKET ESCALATION ALERT</h2><p><b>Ticket ID:</b> #{{ $json.body.ticket_id }}</p><p><b>Subject:</b> {{ $json.body.subject }}</p><p><b>Priority:</b> CRITICAL</p><p><b>Escalated By:</b> {{ $json.body.escalated_by }}</p><p><b>Reason:</b> {{ $json.body.reason }}</p><hr><p>Please assign a senior engineer immediately.</p>"
+      },
+      "id": "node-notify-admin-email",
+      "name": "Notify Admin via Urgent Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [720, 200]
+    },
+    {
+      "parameters": {
+        "chatId": "@admin-critical-escalations",
+        "text": "=🚨 *CRITICAL TICKET ESCALATED*\n*Ticket #:* {{ $json.body.ticket_id }}\n*Subject:* {{ $json.body.subject }}\n*Reason:* {{ $json.body.reason }}\n*Escalated By:* {{ $json.body.escalated_by }}"
+      },
+      "id": "node-notify-admin-slack",
+      "name": "Notify Admin via Slack/Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [720, 400]
+    }
+  ],
+  "connections": {
+    "Webhook - Ticket Escalated": {
+      "main": [
+        [
+          {
+            "node": "Check If Priority is Critical",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Priority is Critical": {
+      "main": [
+        [
+          {
+            "node": "Notify Admin via Urgent Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify Admin via Slack/Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {}
+}
